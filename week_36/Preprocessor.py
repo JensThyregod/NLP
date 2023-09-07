@@ -1,14 +1,16 @@
 import pandas as pd
 
-class Preprocessor:
+class DataFramePreprocessor:
     
     def __init__(self, df):
-        self.df = df
+        self.df = df.copy()
+        self._add_tokens_column()
+        self._clean_tokens()
 
-    def add_tokens_column(self):
+    def _add_tokens_column(self):
         self.df['tokens'] = self.df['document_plaintext'].str.split()
 
-    def clean_tokens(self, column_name='tokens'):
+    def _clean_tokens(self, column_name='tokens'):
         def clean_token(token):
             for char in [',', ':', ';', '(', ')', '.']:
                 token = token.replace(char, '')
