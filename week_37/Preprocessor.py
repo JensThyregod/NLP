@@ -1,6 +1,4 @@
 import pandas as pd
-import arabicstopwords.arabicstopwords as stp
-from bltk.langtools import remove_stopwords, Tokenizer
 
 class DataFramePreprocessor:
     
@@ -12,7 +10,9 @@ class DataFramePreprocessor:
         self._lowercase_tokens()
         self._clean_tokens()
         
-        # Conditionally remove stopwords for the three languages
+        # Add special tokens
+        self._add_special_tokens()
+        
         if self.remove_stopwords:
             self._remove_arabic_stopwords()
             self._remove_bengali_stopwords()
@@ -29,11 +29,6 @@ class DataFramePreprocessor:
             column_name = f'{col}_tokens'
             self.df[column_name] = self.df[column_name].apply(lambda tokens: [token.lower() for token in tokens])
 
-    def _count_all_tokens(self):
-        for col in self.columns_to_tokenize:
-            column_name = f'{col}_tokens'
-            self.total_token_count = sum(self.df[column_name].apply(len))
-
     def _clean_tokens(self):
         def clean_token(token):
             for char in [',', ':', ';', '(', ')', '.', '?']:
@@ -43,6 +38,14 @@ class DataFramePreprocessor:
         for col in self.columns_to_tokenize:
             column_name = f'{col}_tokens'
             self.df[column_name] = self.df[column_name].apply(lambda tokens: [clean_token(token) for token in tokens])
+
+    def _add_special_tokens(self):
+        for col in self.columns_to_tokenize:
+            column_name = f'{col}_tokens'
+            if col == 'question_text':
+                self.df[column_name] = self.df[column_name].apply(lambda tokens: ['<Q>'] + tokens + ['</Q>'])
+            elif col == 'document_plaintext':
+                self.df[column_name] = self.df[column_name].apply(lambda tokens: ['<D>'] + tokens + ['</D>'])
 
     def _remove_arabic_stopwords(self):
         def filter_arabic_stopwords(tokens, lang):
@@ -57,7 +60,7 @@ class DataFramePreprocessor:
     def _remove_bengali_stopwords(self):
         def filter_bengali_stopwords(tokens, lang):
             if lang == "bengali":
-                return remove_stopwords(tokens, level='moderate')  # adjust as needed
+                return remove_stopwords(tokens, level='moderate')
             return tokens
         
         for col in self.columns_to_tokenize:
@@ -65,16 +68,20 @@ class DataFramePreprocessor:
             self.df[column_name] = self.df.apply(lambda row: filter_bengali_stopwords(row[column_name], row['language']), axis=1)
 
     def _remove_indonesian_stopwords(self):
-        # load stopwords
         with open("tala-stopwords-indonesia.txt", "r") as f:
             stopword_list = [line.strip() for line in f]
-
-        # Remove the stopwords from the tokens
+        
         def filter_indonesian_stopwords(tokens, lang):
             if lang == "indonesian":
                 return [token for token in tokens if token not in stopword_list]
             return tokens
-
+        
         for col in self.columns_to_tokenize:
             column_name = f'{col}_tokens'
             self.df[column_name] = self.df.apply(lambda row: filter_indonesian_stopwords(row[column_name], row['language']), axis=1)
+
+    def _count_all_tokens(self):
+        for col in self.columns_to_tokenize:
+            column_name = f'{col}_tokens'
+            self.total_token_count = sum(self.df[column_name].apply(len))
+
