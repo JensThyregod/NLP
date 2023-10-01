@@ -20,7 +20,7 @@ class DataFramePreprocessor:
         
         if not remove_punctuation:
             print("Replacing punctuation with tokens...")
-            self._tokenize_punctuataion()
+            self._tokenize_punctuation()
         else:
             self._remove_punctuation()
 
@@ -63,20 +63,35 @@ class DataFramePreprocessor:
             column_name = f'{col}_tokens'
             self.df[column_name] = self.df[column_name].apply(lambda tokens: [clean_token(token) for token in tokens])
     
-    def _tokenize_punctuataion(self):
+    def _tokenize_punctuation(self):
         def tokenize(text):
             """replace punctuation with tokens"""
-            tokens = [token.replace(',', '<COM>')
-                            .replace('.', '<PUN>')
-                            .replace(':', '<COL>')
-                            .replace(';', '<SEM>')
-                            .replace('(', '<LPA>')
-                            .replace(')', '<RPA>')
-                            .replace('?', '<QUE>')
-                            .replace('!', '<EXC>')
-                            .replace('"', '<QUO>')
-                            .replace('\'', '')
-                    for token in text]
+            replacement_dict = {
+                ',': '<COM>',
+                '.': '<PUN>',
+                ':': '<COL>',
+                ';': '<SEM>',
+                '(': '<LPA>',
+                ')': '<RPA>',
+                '?': '<QUE>',
+                '!': '<EXC>',
+                '"': '<QUO>',
+                '\'': ''
+            }
+            
+            # Split tokens that end with punctuation
+            split_tokens = []
+            for token in text:
+                for punct, replacement in replacement_dict.items():
+                    if token.endswith(punct):
+                        split_tokens.extend([token.rstrip(punct), punct])
+                        break
+                else:
+                    split_tokens.append(token)
+            
+            # Replace punctuation with corresponding tokens
+            tokens = [replacement_dict.get(token, token) for token in split_tokens]
+            
             return tokens
 
         for col in self.columns_to_tokenize:
