@@ -39,13 +39,14 @@ class DataFramePreprocessor:
             self._count_all_tokens()
 
     def _add_tokens_columns(self):
-        """Split text on whitespace and return result in new column"""
+        """result in new column, with appropriate name"""
         for col in self.columns_to_tokenize:
             self.df[f'{col}_tokens'] = self.df[col]
     
     def _split(self):
+        """split column"""
         for col in self.columns_to_tokenize:
-            self.df[f'{col}_tokens'] = self.df[col].str.split()
+            self.df[f'{col}_tokens'] = self.df[f'{col}_tokens'].str.split()
 
     def _lowercase_tokens(self):
         for col in self.columns_to_tokenize:
@@ -80,6 +81,7 @@ class DataFramePreprocessor:
         for col in self.columns_to_tokenize:
             column_name = f'{col}_tokens'
             self.df[column_name] = self.df[column_name].apply(tokenize)
+
 
     def _add_special_tokens(self):
         """Add <Q>, </Q>, <D> and </D> for question_text column and document_paintext respectivly
