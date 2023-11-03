@@ -1,11 +1,13 @@
 import pandas as pd
+import arabicstopwords.arabicstopwords as stp
+from bltk.langtools import remove_stopwords, Tokenizer
 
 class DataFramePreprocessor:
     def __init__(self, df, 
                  columns_to_tokenize, 
                  remove_stopwords=True, 
                  remove_punctuation=True, 
-                 add_special_tokens=True,
+                 add_special_tokens=False,
                  count=True):
         
         self.df = df.copy()
@@ -38,6 +40,8 @@ class DataFramePreprocessor:
         if count:
             self._count_all_tokens()
 
+        self._remove_numeric_tokens()
+        
     def _add_tokens_columns(self):
         """result in new column, with appropriate name"""
         for col in self.columns_to_tokenize:
@@ -130,6 +134,13 @@ class DataFramePreprocessor:
         for col in self.columns_to_tokenize:
             column_name = f'{col}_tokens'
             self.df[column_name] = self.df.apply(lambda row: filter_indonesian_stopwords(row[column_name], row['language']), axis=1)
+
+    def _remove_numeric_tokens(self):
+        for col in self.columns_to_tokenize:
+            column_name = f'{col}_tokens'
+            self.df[column_name] = self.df[column_name].apply(lambda tokens: [token for token in tokens if not token.isnumeric()])
+
+
 
     def _count_all_tokens(self):
         for col in self.columns_to_tokenize:
